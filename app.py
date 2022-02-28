@@ -11,7 +11,7 @@ from sqlalchemy import create_engine, func
 from flask import Flask, jsonify
 
 
-#################################################
+################################################
 # Database Setup
 #################################################
 engine = create_engine("sqlite:///Resources/hawaii.sqlite")
@@ -70,8 +70,6 @@ def precipitation():
     return jsonify(all_prcp)
 
 
-
-
 @app.route("/api/v1.0/stations")
 def stations():
     # Create our session (link) from Python to the DB
@@ -98,7 +96,6 @@ def temperatures():
     """Return a list of temperature observations"""
     # Query dates and temp observations of the most active station for the last year of data
 
-    #temp_results = session.query(Measurement.date).all()
     year_ago = dt.datetime(2017,8,23) - dt.timedelta(days=365)
     one_year = session.query(Measurement.date, Measurement.prcp).\
         filter(Measurement.date >= year_ago).all()
@@ -116,7 +113,7 @@ def temperatures():
 @app.route("/api/v1.0/temp/<start>")
 @app.route("/api/v1.0/temp/<start>/<end>")
 def temp_start(start=None, end='2017-08-23'):
-    # Create our session (link) from Python to the DB
+    # If no end date is provided, default to last date in the database
     session = Session(engine)
 
     # Return min temp, max temp and avg temp for dates greater than a specific start date
@@ -124,34 +121,28 @@ def temp_start(start=None, end='2017-08-23'):
 
     sel = [func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)]
     
-    #if not end:
     date_start = dt.datetime.strptime(start,"%Y-%m-%d")
-    date_results=session.query(*sel).filter(Measurement.date >= date_start).all()
+    date_end = dt.datetime.strptime(end, "%Y-%m-%d")
+    date_results=session.query(*sel).\
+        filter(Measurement.date >= date_start).\
+        filter(Measurement.date<=date_end).all()
 
     session.close()   
 
     sdateall = []
     for min, avg, max in date_results:
         sdate_dict = {}
-        sdate_dict["Start Date"]=date_start
-        sdate_dict["Min"]=min
+        sdate_dict["Minimum Temperature"]=min
         sdate_dict["Average"]= avg
-        sdate_dict["Max"] = max
+        sdate_dict["Maximum Temperature"] = max
+        sdate_dict["Start Date"]=date_start
+        sdate_dict["End Date"]=date_end
         sdateall.append(sdate_dict)
 
-        #sdateall=list(np.ravel(date_results))
+
     
     return jsonify(sdateall)   
       
-    #date_start = dt.datetime.strptime(start, "%Y-%m-%d")
-    #date_end = dt.datetime.strptime(end, "%Y-%m-%d")
-   
-    #end_date_results = session.query(*sel).\
-        #filter(Measurement.date>= date_start).\
-        #filter(Measurement.date<= date_end).all()    
-   
-    #all_st_dates=list(np.ravel(end_date_results))
-    #return jsonify(all_st_dates)
    
    
 
