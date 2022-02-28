@@ -42,11 +42,10 @@ def welcome():
     return (
         f"Welcome to Hawaii's Weather Page<br>"
         f"Available Routes:<br/>"
-        f"/api/v1.0/precipitation<br/>"
-        f"/api/v1.0/stations<br/>"
-        f"/api/v1.0/tobs<br>"
-        f"/api/v1.0/<start><br>"
-        f"/api/v1.0/<start>/<end>"
+        f"Precipitation: /api/v1.0/precipitation<br/>"
+        f"List of Stations: /api/v1.0/stations<br/>"
+        f"Temperatures for one year: /api/v1.0/tobs<br>"
+        f"Min, max and average temps for start date (yyyy-mm-dd): /api/v1.0/temp/start/end"
     )
 
 @app.route("/api/v1.0/precipitation")
@@ -114,45 +113,45 @@ def temperatures():
 
     return jsonify(all_temps)
 
-@app.route("/api/v1.0/<start>")
-def temp_start(start):
+@app.route("/api/v1.0/temp/<start>")
+@app.route("/api/v1.0/temp/<start>/<end>")
+def temp_start(start=None, end='2017-08-23'):
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
     # Return min temp, max temp and avg temp for dates greater than a specific start date
     # Date is in the format Year-Month-Day
 
-    st_date = dt.datetime.strptime(start, '%Y-%m-%d')
-  
-    date_results = session.query(func.min(Measurement.tobs),func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
-        filter(Measurement.date>= st_date).all()
-
-    session.close()
-
-    all_st_dates=list(np.ravel(date_results))
+    sel = [func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)]
     
-    return jsonify(date_results)    
+    #if not end:
+    date_start = dt.datetime.strptime(start,"%Y-%m-%d")
+    date_results=session.query(*sel).filter(Measurement.date >= date_start).all()
 
+    session.close()   
+
+    sdateall = []
+    for min, avg, max in date_results:
+        sdate_dict = {}
+        sdate_dict["Start Date"]=date_start
+        sdate_dict["Min"]=min
+        sdate_dict["Average"]= avg
+        sdate_dict["Max"] = max
+        sdateall.append(sdate_dict)
+
+        #sdateall=list(np.ravel(date_results))
+    
+    return jsonify(sdateall)   
+      
+    #date_start = dt.datetime.strptime(start, "%Y-%m-%d")
+    #date_end = dt.datetime.strptime(end, "%Y-%m-%d")
    
-
-def temp_start_end(start, end):
-    # Create our session (link) from Python to the DB
-    session = Session(engine)
-
-    # Return min temp, max temp and avg temp for dates greater than a specific start date
-    # Date is in the format Year-Month-Day
-
-    st_date = dt.datetime.strptime(start, '%Y-%m-%d')
-    end_date = dt.datetime.strptime(end, '%Y-%m-%d')
-  
-    end_date_results = session.query(func.min(Measurement.tobs),func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
-        filter(Measurement.date>= st_date).\
-        filter(Measurement.date <=end_date).all()    
-
-    return jsonify(end_date_results)    
-
-    session.close()
-
+    #end_date_results = session.query(*sel).\
+        #filter(Measurement.date>= date_start).\
+        #filter(Measurement.date<= date_end).all()    
+   
+    #all_st_dates=list(np.ravel(end_date_results))
+    #return jsonify(all_st_dates)
    
    
 
