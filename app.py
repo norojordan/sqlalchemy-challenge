@@ -144,7 +144,6 @@ def temp_start(start=None, end='2017-08-23'):
     return jsonify(sdateall)   
       
    
-   
 
 if __name__ == '__main__':
     app.run(debug=True)
